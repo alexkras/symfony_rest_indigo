@@ -1,0 +1,57 @@
+services:
+  php:
+    build:
+      context: docker/php/.
+      target: symfony_php
+      args:
+        SYMFONY_VERSION: "7.2.x"
+    container_name: symfony_php
+    command: php-fpm -F -d zend_extension=xdebug.so
+    volumes:
+      - ./:/srv/app:rw
+    networks:
+      - msymfony-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: symfony_nginx
+    ports:
+      - "8080:80"
+    volumes:
+      - ./:/srv/app:ro
+      - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
+    depends_on:
+      - php
+    networks:
+      - msymfony-network
+
+  mysql:
+    image: mysql:8.0
+    container_name: symfony_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: symfony
+      MYSQL_USER: symfony
+      MYSQL_PASSWORD: symfony
+    ports:
+      - "3306:3306"
+    volumes:
+      - symfony-mysql-data:/var/lib/mysql
+    networks:
+      - msymfony-network
+
+  redis:
+    image: redis:alpine
+    container_name: msymfony_redis
+    ports:
+      - "6379:6379"
+    networks:
+        - msymfony-network
+
+volumes:
+  symfony-mysql-data:
+
+networks:
+  msymfony-network:
+    driver: bridge
+
